@@ -119,169 +119,74 @@ const styles = StyleSheet.create({
 
 export default ProductList;
 */}
+import React, { useEffect, useState } from "react";
+import { View, FlatList, ActivityIndicator, Text, StyleSheet } from "react-native";
+import { getProducts } from "../services/productService";
+import ProductCard from "../../components/ui/ProductCard";
+import Header from "@/components/ui/Header";
 
-import React, { useEffect, useState } from 'react';
-import { View, FlatList, ActivityIndicator, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
-import axios from 'axios';
-import ProductCard from '../../components/ui/ProductCard';
-import { ScrollView } from 'react-native-gesture-handler';
-
-const API_URL = 'http://10.0.2.2:5000/api/products';
-
-const ProductList = () => {
+export default function ProductList() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await axios.get(API_URL);
-        setProducts(response.data);
-      } catch (err) {
-        setError('Ошибка загрузки данных');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
+    loadProducts();
   }, []);
 
-  if (loading) return <Text style={styles.message}>Загрузка...</Text>;
-  if (error) return <Text style={styles.message}>{error}</Text>;
+  const loadProducts = async () => {
+    try {
+      const data = await getProducts();
+      setProducts(data || []); // Убеждаемся, что products всегда массив
+    } catch (error) {
+      console.error("Ошибка загрузки товаров:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Разделение товаров на категории
-  const hitProducts = products.filter((item) => item.isHit);
-  const specialOffers = products.filter((item) => item.isSpecialOffer);
-  const newProducts = products.filter((item) => item.isNew);
+  if (loading) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color="blue" />
+      </View>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Хиты продаж */}
-        {hitProducts.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Хит продажу</Text>
-              <TouchableOpacity onPress={() => console.log('Перейти ко всем хитам')}>
-                <Text style={styles.viewAll}>Все</Text>
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={hitProducts}
-              keyExtractor={(item) => item.id.toString()}
-              numColumns={2}
-              renderItem={({ item }) => (
-                <ProductCard
-                  image={`http://10.0.2.2:7208${item.imageUrl}`}
-                  title={item.name}
-                  price={`${item.price}₴`}
-                  isHit={item.isHit}
-                  isNew={item.isNew}
-                  isSpecialOffer={item.isSpecialOffer}
-                />
-              )}
-              contentContainerStyle={styles.list}
-              scrollEnabled={false} // Отключаем отдельный скролл
-            />
-          </View>
+    <View style={styles.container}>
+      <Header title="Список товаров" />
+      <Text style={styles.title}>Всего товаров: {products.length}</Text>
+      <FlatList
+        data={products}
+        keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
+        numColumns={2} // Два элемента в строке
+        columnWrapperStyle={styles.row} // Стилизация строк
+        renderItem={({ item }) => (
+          <ProductCard product={item} />
         )}
-
-        {/* Спецпредложения */}
-        {specialOffers.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Спецпропозиції</Text>
-              <TouchableOpacity onPress={() => console.log('Перейти ко всем спецпредложениям')}>
-                <Text style={styles.viewAll}>Все</Text>
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={specialOffers}
-              keyExtractor={(item) => item.id.toString()}
-              numColumns={2}
-              renderItem={({ item }) => (
-                <ProductCard
-                  image={`http://10.0.2.2:7208${item.imageUrl}`}
-                  title={item.name}
-                  price={`${item.price}₴`}
-                  isHit={item.isHit}
-                  isNew={item.isNew}
-                  isSpecialOffer={item.isSpecialOffer}
-                />
-              )}
-              contentContainerStyle={styles.list}
-              scrollEnabled={false}
-            />
-          </View>
-        )}
-
-
-         {/*Новинка */}
-         {newProducts.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Новинка</Text>
-              <TouchableOpacity onPress={() => console.log('Перейти к новинкам')}>
-                <Text style={styles.viewAll}>Все</Text>
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={newProducts}
-              keyExtractor={(item) => item.id.toString()}
-              numColumns={2}
-              renderItem={({ item }) => (
-                <ProductCard
-                  image={`http://10.0.2.2:7208${item.imageUrl}`}
-                  title={item.name}
-                  price={`${item.price}₴`}
-                  isHit={item.isHit}
-                  isNew={item.isNew}
-                  
-                />
-              )}
-              contentContainerStyle={styles.list}
-              scrollEnabled={false} // Отключаем отдельный скролл
-            />
-          </View>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+      />
+    </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    padding: 10,
   },
-  section: {
-    marginVertical: 10,
-    paddingHorizontal: 10,
+  loader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  sectionTitle: {
+  title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
+    marginBottom: 10,
   },
-  viewAll: {
-    color: '#0099FF',
-    fontSize: 14,
-  },
-  list: {
-    paddingBottom: 10,
-  },
-  message: {
-    textAlign: 'center',
-    marginTop: 20,
-    fontSize: 18,
+  row: {
+    justifyContent: "space-between", // Разделяем элементы в строке
+    marginBottom: 10, // Отступ между строками
   },
 });
 
-export default ProductList;

@@ -356,3 +356,8 @@ const styles = StyleSheet.create({
    loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
    error: { color: 'red', textAlign: 'center', marginTop: 20 },
  });
+
+
+
+
+ 

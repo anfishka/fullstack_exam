@@ -8,7 +8,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 
 export default function HomeScreen() {
-  return (   <SafeAreaView style={{ flex: 1 }}> 
+  return (   <SafeAreaView style={{ flex: 1,  backgroundColor: '#D3D3D3', }}> 
   <Header/>
      <BannerSlider />
      
