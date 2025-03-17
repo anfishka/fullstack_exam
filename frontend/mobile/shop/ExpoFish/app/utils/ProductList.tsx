@@ -136,7 +136,11 @@ export default function ProductList() {
     try {
       if (nextPage > 1) setIsLoadingMore(true);
       const data = await getProducts(nextPage, 20); // Загружаем по 20 товаров
-      setProducts((prev) => [...prev, ...data]); // Добавляем к существующему списку
+      setProducts((prev) => {
+        const allProducts = [...prev, ...data];
+        const uniqueProducts = Array.from(new Map(allProducts.map(p => [p.id, p])).values());
+        return uniqueProducts;
+      });
       setPage(nextPage);
     } catch (error) {
       console.error("Ошибка загрузки товаров:", error);
@@ -153,7 +157,7 @@ export default function ProductList() {
   return (
     <FlatList
       data={products}
-      keyExtractor={(item) => item.id.toString()}
+      keyExtractor={(item, index) => `${item.id || index}`}
       numColumns={2}
       columnWrapperStyle={styles.row}
       renderItem={({ item }) => <ProductCard product={item} />}

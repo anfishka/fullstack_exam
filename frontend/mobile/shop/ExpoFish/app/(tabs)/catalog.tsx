@@ -200,6 +200,18 @@ const styles = StyleSheet.create({
   productPrice: { fontSize: 14, color: '#777' },
 });
  */}
+
+
+
+
+
+
+
+
+
+
+ ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ /*
  import React, { useState, useEffect } from 'react';
  import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
  import axios from 'axios';
@@ -282,7 +294,7 @@ const styles = StyleSheet.create({
     <>
       <Header title="Каталог" />
       <View style={styles.container}>
-        {/* Категории */}
+      
         <View style={styles.categoriesContainer}>
           <FlatList
             data={categories}
@@ -301,7 +313,7 @@ const styles = StyleSheet.create({
           />
         </View>
 
-        {/* Товары */}
+      
         <View style={styles.productsContainer}>
           <FlatList
             data={products}
@@ -360,4 +372,200 @@ const styles = StyleSheet.create({
 
 
 
+ */
+ import React, { useState, useEffect } from "react";
+ import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from "react-native";
+ import axios from "axios";
+ import { useRouter } from "expo-router"; // 🚀 Для навигации
+ import Header from "@/components/ui/Header";
+ 
+ const API_URL = "http://10.0.2.2:5000/api/products/categories";
+ const API_URL_PRODUCTS = "http://10.0.2.2:5000/api/products/by-category";
+ 
+ export default function CatalogScreen() {
+   const router = useRouter();
+   const [categories, setCategories] = useState([]);
+   const [products, setProducts] = useState([]);
+   const [selectedCategory, setSelectedCategory] = useState(null);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState<string | null>(null);
+   const [page, setPage] = useState(1);
+   const [isLoadingMore, setIsLoadingMore] = useState(false);
+   const PAGE_SIZE = 20;
+ 
+   // 🔄 Загрузка категорий
+   useEffect(() => {
+     const fetchCategories = async () => {
+       try {
+         console.log("Запрос категорий...");
+         const response = await axios.get(API_URL);
+         console.log("Категории получены:", response.data);
+         setCategories(response.data);
+ 
+         if (response.data.length > 0) {
+           setSelectedCategory(response.data[0]);
+           fetchProducts(response.data[0].id, 1);
+         }
+       } catch (err) {
+         console.error("Ошибка загрузки категорий:", err);
+         setError("Ошибка загрузки категорий");
+       } finally {
+         setLoading(false);
+       }
+     };
+ 
+     fetchCategories();
+   }, []);
+ 
+   // 🔄 Загрузка товаров по категории (пагинация)
+   /*
+   const fetchProducts = async (categoryId: number, nextPage: number) => {
+     if (nextPage === 1) setLoading(true);
+     setIsLoadingMore(true);
+ 
+     try {
+       console.log(`🔄 Загружаем товары для категории ID: ${categoryId}, страница: ${nextPage}`);
+ 
+       const response = await axios.get(`${API_URL_PRODUCTS}/${categoryId}`, {
+         params: { page: nextPage, pageSize: PAGE_SIZE },
+       });
+ 
+       console.log("✅ Полученные товары:", response.data);
+       
+       if (nextPage === 1) {
+         setProducts(response.data);
+       } else {
+         setProducts((prev) => [...prev, ...response.data]); // Добавляем новые товары
+       }
+ 
+       setPage(nextPage);
+     } catch (err) {
+       console.error("❌ Ошибка загрузки товаров:", err.response ? err.response.data : err.message);
+       setError(`Ошибка загрузки товаров: ${err.message}`);
+     } finally {
+       setLoading(false);
+       setIsLoadingMore(false);
+     }
+   };
+
+
+   */
+   const fetchProducts = async (categoryId: number, nextPage: number) => {
+    if (nextPage === 1) setLoading(true);
+    setIsLoadingMore(true);
+  
+    try {
+      console.log(`🔄 Загружаем товары для категории ID: ${categoryId}, страница: ${nextPage}`);
+  
+      const response = await axios.get(`${API_URL_PRODUCTS}/${categoryId}`, {
+        params: { page: nextPage, pageSize: PAGE_SIZE },
+      });
+  
+      console.log("✅ Полученные товары:", response.data);
+  
+      setProducts((prev) => {
+        const allProducts = [...prev, ...response.data];
+        const uniqueProducts = Array.from(new Map(allProducts.map(p => [p.id, p])).values()); // Убираем дубликаты
+        return uniqueProducts;
+      });
+  
+      setPage(nextPage);
+    } catch (err) {
+      console.error("❌ Ошибка загрузки товаров:", err.response ? err.response.data : err.message);
+      setError(`Ошибка загрузки товаров: ${err.message}`);
+    } finally {
+      setLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
+ 
+   // 🔄 Выбор категории
+   const handleCategorySelect = (category: any) => {
+     if (selectedCategory?.id === category.id) return;
+ 
+     setSelectedCategory(category);
+     setProducts([]); // Очистка перед загрузкой новых данных
+     setPage(1);
+     fetchProducts(category.id, 1);
+   };
+ 
+   // 🔄 Подгрузка товаров при скролле
+   const loadMoreProducts = () => {
+     if (!isLoadingMore) {
+       fetchProducts(selectedCategory.id, page + 1);
+     }
+   };
+ 
+   if (loading) return <ActivityIndicator size="large" color="#0099FF" style={styles.loader} />;
+   if (error) return <Text style={styles.error}>{error}</Text>;
+ 
+   return (
+     <>
+       <Header title="Каталог" />
+       <View style={styles.container}>
+         {/* Категории */}
+         <FlatList
+           data={categories}
+           keyExtractor={(item, index) => item.id ? item.id.toString() : `index-${index}`}
+
+           horizontal
+           showsHorizontalScrollIndicator={false}
+           renderItem={({ item }) => (
+             <TouchableOpacity
+               style={[styles.categoryItem, selectedCategory?.id === item.id && styles.selectedCategory]}
+               onPress={() => handleCategorySelect(item)}
+             >
+               <Image source={{ uri: item.imageUrl }} style={styles.categoryImage} />
+               <Text style={[styles.categoryText, selectedCategory?.id === item.id && styles.selectedText]}>
+                 {item.name}
+               </Text>
+             </TouchableOpacity>
+           )}
+         />
+ 
+         {/* Товары */}
+         <FlatList
+           data={products}
+           keyExtractor={(item) => item.id.toString()}
+           numColumns={2}
+           columnWrapperStyle={styles.row}
+           renderItem={({ item }) => (
+             <TouchableOpacity style={styles.productItem} onPress={() => router.push(`/product/${item.id}`)}>
+               <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
+               <Text style={styles.productText}>{item.name}</Text>
+               <Text style={styles.productPrice}>{item.price}₴</Text>
+             </TouchableOpacity>
+           )}
+           onEndReached={loadMoreProducts} // 🚀 Подгрузка при прокрутке
+           onEndReachedThreshold={0.5}
+           ListFooterComponent={isLoadingMore ? <ActivityIndicator size="small" color="#0099FF" /> : null}
+         />
+       </View>
+     </>
+   );
+ }
+ 
+ const styles = StyleSheet.create({
+   container: { flex: 1, backgroundColor: "#F5F5F5", paddingHorizontal: 10 },
+   categoryItem: { padding: 10, alignItems: "center" },
+   selectedCategory: { backgroundColor: "#E6F7FF", borderRadius: 8 },
+   categoryImage: { width: 50, height: 50, resizeMode: "contain" },
+   categoryText: { fontSize: 14, textAlign: "center", marginTop: 5 },
+   selectedText: { color: "#00AEEF", fontWeight: "bold" },
+   row: { justifyContent: "space-between", marginVertical: 10 },
+   productItem: {
+     flex: 1,
+     alignItems: "center",
+     backgroundColor: "#FFF",
+     margin: 5,
+     padding: 10,
+     borderRadius: 8,
+     elevation: 2,
+   },
+   productImage: { width: 120, height: 120, resizeMode: "contain" },
+   productText: { fontSize: 16, fontWeight: "bold", textAlign: "center" },
+   productPrice: { fontSize: 14, color: "#777", marginTop: 5 },
+   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
+   error: { color: "red", textAlign: "center", marginTop: 20 },
+ });
  
