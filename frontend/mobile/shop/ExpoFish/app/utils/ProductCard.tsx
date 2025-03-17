@@ -38,6 +38,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     </TouchableOpacity>
   );
 };
+
+export default ProductCard
+
 const styles = StyleSheet.create({
   card: {
     margin: 7,

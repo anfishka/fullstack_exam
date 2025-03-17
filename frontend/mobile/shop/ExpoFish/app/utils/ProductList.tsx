@@ -122,53 +122,47 @@ export default ProductList;
 import React, { useEffect, useState } from "react";
 import { View, FlatList, ActivityIndicator, Text, StyleSheet } from "react-native";
 import { getProducts } from "../services/productService";
-import ProductCard from "../../components/ui/ProductCard";
+
 import Header from "@/components/ui/Header";
+import ProductCard from "./ProductCard";
 
 export default function ProductList() {
+  const [page, setPage] = useState(1);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadProducts();
-  }, []);
-
-  const loadProducts = async () => {
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  
+  const loadProducts = async (nextPage = 1) => {
     try {
-      const data = await getProducts();
-      setProducts(data || []); // Убеждаемся, что products всегда массив
+      if (nextPage > 1) setIsLoadingMore(true);
+      const data = await getProducts(nextPage, 20); // Загружаем по 20 товаров
+      setProducts((prev) => [...prev, ...data]); // Добавляем к существующему списку
+      setPage(nextPage);
     } catch (error) {
       console.error("Ошибка загрузки товаров:", error);
     } finally {
       setLoading(false);
+      setIsLoadingMore(false);
     }
   };
-
-  if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color="blue" />
-      </View>
-    );
-  }
-
+  
+  useEffect(() => {
+    loadProducts();
+  }, []);
+  
   return (
-    <View style={styles.container}>
-      <Header title="Список товаров" />
-      <Text style={styles.title}>Всего товаров: {products.length}</Text>
-      <FlatList
-        data={products}
-        keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
-        numColumns={2} // Два элемента в строке
-        columnWrapperStyle={styles.row} // Стилизация строк
-        renderItem={({ item }) => (
-          <ProductCard product={item} />
-        )}
-      />
-    </View>
+    <FlatList
+      data={products}
+      keyExtractor={(item) => item.id.toString()}
+      numColumns={2}
+      columnWrapperStyle={styles.row}
+      renderItem={({ item }) => <ProductCard product={item} />}
+      onEndReached={() => loadProducts(page + 1)} // Подгрузка при достижении конца списка
+      onEndReachedThreshold={0.5} // Срабатывает, когда пользователь прокручивает 50% списка
+      ListFooterComponent={isLoadingMore ? <ActivityIndicator size="small" /> : null}
+    />
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

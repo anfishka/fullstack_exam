@@ -3,12 +3,14 @@ import { Platform } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
+import { CartProvider } from '@/components/ui/CartContext';
 
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
+  
     <Tabs
       screenOptions={{
        // tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
@@ -80,5 +82,7 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+
+    
   );
 }

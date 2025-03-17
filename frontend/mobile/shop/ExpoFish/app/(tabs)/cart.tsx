@@ -1,88 +1,123 @@
-import Header from '@/components/ui/Header';
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from "expo-router";
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useCart } from "@/components/ui/CartContext";
+import Header from "@/components/ui/Header";
 
-const CartScreen = ({ navigation }) => {
+export default function CartScreen() {
+  const router = useRouter();
+  const { cart, addToCart, removeFromCart, clearCart } = useCart();
+
+  // Функция увеличения количества
+  const increaseQuantity = (id: number) => {
+    const item = cart.find((item) => item.id === id);
+    if (item) addToCart({ ...item, quantity: item.quantity + 1 });
+  };
+
+  // Функция уменьшения количества
+  const decreaseQuantity = (id: number) => {
+    const item = cart.find((item) => item.id === id);
+    if (item && item.quantity > 1) {
+      addToCart({ ...item, quantity: item.quantity - 1 });
+    } else {
+      removeFromCart(id);
+    }
+  };
+
+  // Подсчет общей суммы
+  const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
   return (
     <>
-   
     <Header title="Корзина" />
     <View style={styles.container}>
       {/* Заголовок */}
       <View style={styles.header}>
-        <TouchableOpacity >
+        <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
-      
-        <TouchableOpacity>
+        
+        <TouchableOpacity onPress={clearCart}>
           <Ionicons name="trash-outline" size={24} color="white" />
         </TouchableOpacity>
       </View>
 
-      {/* Контент пустой корзины */}
-      <View style={styles.content}>
-        <Ionicons name="cart-outline" size={80} color="black" />
-        <Text style={styles.emptyTitle}>Кошик порожній</Text>
-        <Text style={styles.emptyText}>Сміливо вибирайте товари з нашого каталогу</Text>
-      </View>
+      {/* Список товаров */}
+      <FlatList
+        data={cart}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <View style={styles.cartItem}>
+            <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
+            <View style={styles.itemInfo}>
+              <Text style={styles.itemName}>{item.name}</Text>
+              <Text style={styles.itemPrice}>{item.price} ₴</Text>
+              <View style={styles.quantityControl}>
+                <TouchableOpacity onPress={() => decreaseQuantity(item.id)}>
+                  <Ionicons name="remove-circle-outline" size={24} color="#0099FF" />
+                </TouchableOpacity>
+                <Text style={styles.quantity}>{item.quantity}</Text>
+                <TouchableOpacity onPress={() => increaseQuantity(item.id)}>
+                  <Ionicons name="add-circle-outline" size={24} color="#0099FF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <TouchableOpacity onPress={() => removeFromCart(item.id)}>
+              <Ionicons name="trash" size={24} color="red" />
+            </TouchableOpacity>
+          </View>
+        )}
+      />
 
-      {/* Кнопка "Каталог товарів" */}
-      <TouchableOpacity style={styles.catalogButton} onPress={() => navigation.navigate('Catalog')}>
-        <Text style={styles.catalogText}>Каталог товарів</Text>
-      </TouchableOpacity>
+      {/* Итог и кнопка оформления */}
+      <View style={styles.footer}>
+        <Text style={styles.total}>Разом: {totalPrice.toFixed(2)} ₴</Text>
+        <TouchableOpacity style={styles.checkoutButton} onPress={() => router.push("/checkout")}>
+          <Text style={styles.checkoutText}>Оформить заказ</Text>
+        </TouchableOpacity>
+      </View>
     </View>
+
     </>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F2F2F2',
-  },
+  container: { flex: 1, backgroundColor: "#F2F2F2" },
   header: {
-    backgroundColor: '#0099FF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    backgroundColor: "#0099FF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 15,
     paddingVertical: 15,
   },
-  headerText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
+  headerText: { fontSize: 18, fontWeight: "bold", color: "white" },
+  cartItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "white",
+    padding: 10,
+    marginVertical: 5,
+    borderRadius: 8,
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 2,
   },
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 10,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: 'gray',
-    textAlign: 'center',
-    marginTop: 5,
-  },
-  catalogButton: {
-    backgroundColor: '#0099FF',
+  itemImage: { width: 60, height: 60, resizeMode: "contain", marginRight: 10 },
+  itemInfo: { flex: 1 },
+  itemName: { fontSize: 16, fontWeight: "bold" },
+  itemPrice: { fontSize: 14, color: "gray", marginBottom: 5 },
+  quantityControl: { flexDirection: "row", alignItems: "center" },
+  quantity: { fontSize: 16, marginHorizontal: 10 },
+  footer: { padding: 15, backgroundColor: "white", borderTopWidth: 1, borderColor: "#ddd" },
+  total: { fontSize: 18, fontWeight: "bold", textAlign: "right", marginBottom: 10 },
+  checkoutButton: {
+    backgroundColor: "#0099FF",
     paddingVertical: 15,
-    marginHorizontal: 10,
     borderRadius: 5,
-    alignItems: 'center',
-    marginBottom: 20,
+    alignItems: "center",
   },
-  catalogText: {
-    fontSize: 16,
-    color: 'white',
-    fontWeight: 'bold',
-  },
+  checkoutText: { fontSize: 18, color: "white", fontWeight: "bold" },
 });
-
-export default CartScreen;
